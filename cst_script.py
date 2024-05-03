@@ -21,6 +21,7 @@ def write_string_to_file(content, file_path):
     except IOError:
         print(f"Error: Unable to write content to '{file_path}'")
 
+print("Setting up... (This might take a while)")
 my_cst = ci.DesignEnvironment()    
 active_instance = ci.DesignEnvironment.open_project(my_cst, project_path)
 
@@ -32,13 +33,12 @@ parameter_values = [
 
 parameter_names = list(parameter_values[0].keys())
 
-delete = 'Sub Main() \nParameterSweep.DeleteAllSequences() \nEnd Sub'            
+delete_results = 'Sub Main() \ndim objName as object \nset objName = Result1D("S−Parameters") \nDeleteAt("truemodelchange") \nEnd Sub()'
+delete_sequence = 'Sub Main() \nParameterSweep.DeleteAllSequences() \nEnd Sub'            
 solve = 'Sub Main () \nParameterSweep.Start \nEnd Sub'
 
 for i in range(len(parameter_values)):
-    active_instance.schematic.execute_vba_code(delete, timeout=None)
-    createSequence = 'SubMain()\nParameterSweep.AddSequence('+str(i)+')\nEnd Sub'
-    active_instance.schematic.execute_vba_code(createSequence, timeout=None)
+    print(f'Running simulation for index: {i}...')
     out_dir_exists = os.path.exists(out_dir)
     result_str = "" if out_dir_exists else 'Frequency,S(11),'+ ','.join(parameter_names)+ ",F11,F12,F21,F22,B.W1,B.W2" + '\r'
     change_param = 'Sub Main ()'
@@ -53,12 +53,17 @@ for i in range(len(parameter_values)):
     
     active_instance.schematic.execute_vba_code(change_param, timeout=None)        
     
-    
     active_instance.modeler.run_solver()
-    active_instance.schematic.execute_vba_code(delete, timeout=None)
     
     project = cr.ProjectFile(project_path, allow_interactive=True)
-    results = project.get_3d().get_result_item(r"1D Results\S-Parameters\S1,1")
+    results = []
+
+    try:
+        results = project.get_3d().get_result_item(r"1D Results\S-Parameters\S1,1")
+    except ValueError:
+        print (f'Values at index {i} were skipped due to error in simulation')
+        continue
+        
     freqs = np.array(results.get_xdata())
     s_param_values = np.array(results.get_ydata())
     s_db = []
@@ -75,7 +80,7 @@ for i in range(len(parameter_values)):
         s_real_next = 0 if k+1 == len(s_param_values) else s_param_values[k+1].real
         s_imag_next = 0 if k+1 == len(s_param_values) else s_param_values[k+1].imag
         s_next = np.sqrt(s_real_next**2+s_imag_next**2)
-        s_db_val_next = 20 * np.log10(s_next)
+        s_db_val_next = 0 if k+1 == len(s_param_values) else 20 * np.log10(s_next)
         
         s_db.append(s_db_val)
         
@@ -99,5 +104,4 @@ for i in range(len(parameter_values)):
     # Return results
     print("Result: ", result_str)
     write_string_to_file(result_str, out_dir)
-
-
+    print("=======================================================================================")

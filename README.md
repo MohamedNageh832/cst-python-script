@@ -2,9 +2,23 @@
 
 This a python script made to automate the simulation in CST studio suite
 
-## Before you run the script
+## Features
+
+1. Run multiple simulations in series by adding different values for `paramter_values`
+
+2. Auto skip when an error occur in the simulation
+
+3. Data is automatically exported to a csv file `(useful when building a dataset)`
+
+## Before you start!
 
 You need to make few changes to the `cst_script.py`
+
+#### Make sure to edit cst version to the one you are using
+
+```python
+sys.path.append(r"C:\Program Files (x86\CST Studio Suite 2021\AMD64\python_cst_libraries")
+```
 
 #### Update project directory
 
@@ -14,6 +28,9 @@ out_dir = r'path-to-directory\name-of-the-output-file.csv'
 ```
 
 #### Update the parameters
+
+- Plug as much parameter values as you want
+- They will run in sequence
 
 ```python
 parameter_values = [
@@ -40,6 +57,7 @@ parameter_values = [
    The `*` is to indicate that the exact number here doesn't really matter
 
 7. Write ` Python <path-to-directory>\cst_script.py`
+
 8. The script should run successfully, run the simulation and write the results to the output directory as a `csv` file
 
 ## Ouput example
